@@ -28,18 +28,17 @@ module CookbookBump
         exit 0
       end
 
-      unless name_args.size == 2
+      unless name_args.size == 2 or name_args.size == 3
         ui.fatal "Please specify the cookbook whose version you which to bump, and the type of bump you wish to apply."
         show_usage
         exit 1
       end
-      unless name_args.size == 4
+      unless name_args.size == 3
         unless TYPE_INDEX.has_key?(name_args.last.downcase)
           ui.fatal "Sorry, '#{name_args.last}' isn't a valid bump type.  Specify one of 'major', 'minor','patch' or 'specific x.x.x'"
           show_usage
           exit 1
         end
-        cookbook = name_args.first
         patch_type = name_args.last
         patch_mode = 1
       else
@@ -52,8 +51,9 @@ module CookbookBump
         specific_version = name_args.last
         patch_mode = 2
       end
+      cookbook = name_args.first
       
-      cookbook_path = Array(config[:cookbook_path]).first
+      cookbook_path = Array(config[:cookbook_path])[1]
 
       patch(cookbook_path, cookbook, patch_type) if patch_mode == 1
       patch_2(cookbook_path, cookbook, specific_version) if patch_mode == 2
