@@ -1,21 +1,3 @@
-#
-# Author:: Stephen Nelson-Smith (<stephen@atalanta-systems.com>)
-#
-# Copyright (C) 2011-2014, Atalanta Systems Ltd 
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-# http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
-
 require 'chef/knife'
 require 'chef/cookbook_loader'
 require 'chef/cookbook_uploader'
@@ -25,8 +7,9 @@ module CookbookBump
   class Bump < Chef::Knife
 
     TYPE_INDEX = { "major" => 0, "minor" => 1, "patch" => 2 }
+    TYPE_INDEX_2 = { "specific" => 3 }
 
-    banner "knife bump COOKBOOK [MAJOR|MINOR|PATCH]"
+    banner "knife bump COOKBOOK [MAJOR|MINOR|PATCH|SPECIFIC x.x.x]"
 
 
     def run
@@ -50,17 +33,31 @@ module CookbookBump
         show_usage
         exit 1
       end
-    
-      unless TYPE_INDEX.has_key?(name_args.last.downcase)
-        ui.fatal "Sorry, '#{name_args.last}' isn't a valid bump type.  Specify one of 'major', 'minor' or 'patch'"
-        show_usage
-        exit 1
+      unless name_args.size == 4
+        unless TYPE_INDEX.has_key?(name_args.last.downcase)
+          ui.fatal "Sorry, '#{name_args.last}' isn't a valid bump type.  Specify one of 'major', 'minor','patch' or 'specific x.x.x'"
+          show_usage
+          exit 1
+        end
+        cookbook = name_args.first
+        patch_type = name_args.last
+        patch_mode = 1
+      else
+        unless TYPE_INDEX_2.has_key?(name_args[-2].downcase)
+          ui.fatal "Sorry, '#{name_args[-2]}' isn't a valid bump type.  Specify one of 'major', 'minor','patch' or 'specific x.x.x'"
+          show_usage
+          exit 1
+        end
+	patch_type = name_args[-2]
+        specific_version = name_args.last
+        patch_mode = 2
       end
-      cookbook = name_args.first
-      patch_type = name_args.last
+      
       cookbook_path = Array(config[:cookbook_path]).first
 
-      patch(cookbook_path, cookbook, patch_type)
+      patch(cookbook_path, cookbook, patch_type) if patch_mode == 1
+      patch_2(cookbook_path, cookbook, specific_version) if patch_mode == 2
+      
 
     end
 
@@ -75,6 +72,14 @@ module CookbookBump
       new_version = bumped_version.join('.') 
       update_metadata(old_version, new_version, metadata_file)
       ui.msg("Bumping #{type} level of the #{cookbook} cookbook from #{old_version} to #{new_version}")
+    end
+
+    def patch_2(cookbook_path, cookbook, specific_version)
+      old_version = get_version(cookbook_path, cookbook)
+      new_version = specific_version
+      metadata_file = File.join(cookbook_path, cookbook, "metadata.rb")
+      update_metadata(old_version, new_version, metadata_file)
+      ui.msg("Bumping the version of the #{cookbook} cookbook to #{new_version}")
     end
 
     def update_metadata(old_version, new_version, metadata_file)
