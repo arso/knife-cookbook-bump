@@ -53,14 +53,22 @@ module CookbookBump
       end
       cookbook = name_args.first
       
-      cookbook_path = Array(config[:cookbook_path])[1]
+      cookbook_paths = Array(config[:cookbook_path])
+      cookbook_path = which_path(cookbook_paths,cookbook)
 
       patch(cookbook_path, cookbook, patch_type) if patch_mode == 1
       patch_2(cookbook_path, cookbook, specific_version) if patch_mode == 2
       
-
     end
-
+    
+    def which_path(cookbook_paths,cookbook)
+      cookbook_paths.each do | path |
+	if File.exists?("#{path}/#{cookbook}")
+          ui.msg("Cookbook in #{path}")
+	  return path
+        end
+      end
+    end
 
     def patch(cookbook_path, cookbook, type)
       t = TYPE_INDEX[type]
