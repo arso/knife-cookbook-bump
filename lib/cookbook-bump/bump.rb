@@ -87,7 +87,7 @@ module CookbookBump
       new_version = specific_version
       metadata_file = File.join(cookbook_path, cookbook, "metadata.rb")
       update_metadata(old_version, new_version, metadata_file)
-      ui.msg("Bumping the version of the #{cookbook} cookbook to #{new_version}")
+      ui.msg("Setting the version of the #{cookbook} cookbook to #{new_version}")
     end
 
     def update_metadata(old_version, new_version, metadata_file)
