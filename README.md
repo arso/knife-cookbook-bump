@@ -33,15 +33,15 @@ Usage
 
 Knife bump is designed to automate as much of the workflow described above.  At present, the following functionality is supported:
 
-* Bumping of cookbook metadata
+* BumpingSetting of cookbook metadata
 * Tagging of cookbook git repositories
 
 Knife bump is not yet packaged as a Rubygem, so for now, you can just drop the main code, lib/cookbook-bump/bump.rb in your plugins/knife directory, and knife will find it.  It has a dependency on the `grit` gem to provide object-oriented access to Git repositories.
 
-Bumping
--------
+Bumping/Setting
+---------------
 
-Cookbooks follow a simple three level versioning pattern.  Knife bump allows the patch, minor or major version to be bumped, and will automatically update the version in the metadata.
+Cookbooks follow a simple three level versioning pattern plus setting to a specific version.  Knife bump allows the patch, minor or major version to be bumped, and will automatically update the version in the metadata. Knife bump also allows you to specific a specific version to set the cookbook too.
 
     $ knife cookbook create netscape
     ** Creating cookbook netscape
@@ -55,6 +55,10 @@ Cookbooks follow a simple three level versioning pattern.  Knife bump allows the
     Bumping minor level of the netscape cookbook from 0.0.2 to 0.1.2
     $ grep version cookbooks/netscape/metadata.rb 
     version          "0.1.2"
+    $ knife bump netscape specific 1.0.0
+    $ grep version cookbooks/netscape/metadata.rb
+    version          "1.0.0"
+   
 
 Tagging
 -------
@@ -71,6 +75,8 @@ The core functionality is tested using rspec.  The plugin mechanics are assumed 
 
 Changes/Roadmap
 ---------------
+
+* 0.0.3 - Added specific version setting. 
 
 No formal release yet.
 
