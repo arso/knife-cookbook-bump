@@ -7,9 +7,9 @@ module CookbookBump
   class Bump < Chef::Knife
 
     TYPE_INDEX = { "major" => 0, "minor" => 1, "patch" => 2 }
-    TYPE_INDEX_2 = { "specific" => 3 }
+    TYPE_INDEX_2 = { "specific" => 3, "round" => 5 }
 
-    banner "knife bump COOKBOOK [MAJOR|MINOR|PATCH|SPECIFIC x.x.x]"
+    banner "knife bump COOKBOOK [MAJOR|MINOR|PATCH|SPECIFIC x.x.x|ROUND <MAJOR|MINOR>']"
 
 
     def run
@@ -35,7 +35,7 @@ module CookbookBump
       end
       unless name_args.size == 3
         unless TYPE_INDEX.has_key?(name_args.last.downcase)
-          ui.fatal "Sorry, '#{name_args.last}' isn't a valid bump type.  Specify one of 'major', 'minor','patch' or 'specific x.x.x'"
+          ui.fatal "Sorry, '#{name_args.last}' isn't a valid bump type.  Specify one of 'major', 'minor','patch', 'specific x.x.x', 'round <major|minor>'"
           show_usage
           exit 1
         end
@@ -43,7 +43,7 @@ module CookbookBump
         patch_mode = 1
       else
         unless TYPE_INDEX_2.has_key?(name_args[-2].downcase)
-          ui.fatal "Sorry, '#{name_args[-2]}' isn't a valid bump type.  Specify one of 'major', 'minor','patch' or 'specific x.x.x'"
+          ui.fatal "Sorry, '#{name_args[-2]}' isn't a valid bump type.  Specify one of 'major', 'minor','patch', 'specific x.x.x', 'round <major|minor>'"
           show_usage
           exit 1
         end
@@ -57,7 +57,7 @@ module CookbookBump
       cookbook_path = which_path(cookbook_paths,cookbook)
 
       patch(cookbook_path, cookbook, patch_type) if patch_mode == 1
-      patch_2(cookbook_path, cookbook, specific_version) if patch_mode == 2
+      patch_specific(cookbook_path, cookbook, specific_version) if patch_mode == 2
       
     end
     
@@ -71,7 +71,7 @@ module CookbookBump
     end
 
     def patch(cookbook_path, cookbook, type)
-      t = TYPE_INDEX[type]
+      t = TYPE_INDEX[type] 
       current_version = get_version(cookbook_path, cookbook).split(".").map{|i| i.to_i}
       bumped_version = current_version.clone
       bumped_version[t] = bumped_version[t] + 1
@@ -82,12 +82,40 @@ module CookbookBump
       ui.msg("Bumping #{type} level of the #{cookbook} cookbook from #{old_version} to #{new_version}")
     end
 
-    def patch_2(cookbook_path, cookbook, specific_version)
-      old_version = get_version(cookbook_path, cookbook)
-      new_version = specific_version
+    def patch_specific(cookbook_path, cookbook, specific_version)
+      if specific_version == "major" || specific_version == "minor" || specific_version == "patch"
+	patch_round(cookbook_path, cookbook, specific_version)
+      else
+        old_version = get_version(cookbook_path, cookbook)
+        new_version = specific_version
+        metadata_file = File.join(cookbook_path, cookbook, "metadata.rb")
+        update_metadata(old_version, new_version, metadata_file)
+        ui.msg("Setting the version of the #{cookbook} cookbook to #{new_version}")
+      end
+    end
+
+    def patch_round(cookbook_path, cookbook, specific_version)
+      t = TYPE_INDEX[specific_version] 
+      current_version = get_version(cookbook_path, cookbook).split(".").map{|i| i.to_i}
+      bumped_version = current_version.clone
+      bumped_version[t] = bumped_version[t] + 1
+      if t == 0 
+      	bumped_version[t+1] = 0
+        bumped_version[t+2] = 0
+      elsif t == 1
+        bumped_version[t+1] = 0
+      else
+	ui.msg("")
+        ui.fatal "Sorry, '#{name_args[-3]}' isn't a valid bump type.  Specify one of 'major', 'minor','patch', 'specific x.x.x', 'round <major|miner>'"
+        show_usage
+        exit 1
+      end
+
       metadata_file = File.join(cookbook_path, cookbook, "metadata.rb")
+      old_version = current_version.join('.')
+      new_version = bumped_version.join('.') 
       update_metadata(old_version, new_version, metadata_file)
-      ui.msg("Setting the version of the #{cookbook} cookbook to #{new_version}")
+      ui.msg("Bumping to next #{specific_version} and rounding the level of the #{cookbook} cookbook from #{old_version} to #{new_version}")
     end
 
     def update_metadata(old_version, new_version, metadata_file)
